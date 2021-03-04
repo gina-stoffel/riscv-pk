@@ -35,7 +35,7 @@ extern byte dev_public_key[PUBLIC_KEY_SIZE];
  *
  * Used by resume_enclave and run_enclave.
  *
- * Expects that eid has already been valided, and it is OK to run this enclave
+ * Expects that eid has already been validated, and it is OK to run this enclave
 */
 static inline enclave_ret_code context_switch_to_enclave(uintptr_t* regs,
                                                 enclave_id eid,
@@ -88,6 +88,20 @@ static inline enclave_ret_code context_switch_to_enclave(uintptr_t* regs,
   platform_switch_to_enclave(&(enclaves[eid]));
   cpu_enter_enclave_context(eid);
   swap_prev_mpp(&enclaves[eid].threads[0], regs);
+
+  /* update policy counter */
+  if(enclaves[eid].policy_counter.instr_count == 0){
+    // corner case where whe take the fist measurement
+    enclaves[eid].policy_counter.instr_count = (unsigned int)read_csr(minstret);
+  } 
+  else {
+    enclaves[eid].policy_counter.instr_count = (unsigned int)read_csr(minstret) - enclaves[eid].policy_counter.instr_count;
+  }
+
+  /* TODO: verify policy holds / detect any policy violations */
+
+  /* Todo: printm output of policy structs to verify */
+
   return ENCLAVE_SUCCESS;
 }
 
@@ -400,6 +414,9 @@ enclave_ret_code create_enclave(struct keystone_sbi_create create_args)
   pa_params.user_base = create_args.user_paddr;
   pa_params.free_base = create_args.free_paddr;
 
+  /* set policy */
+  unsigned int instr_per_epoch = create_args.instr_per_epoch;
+  unsigned int cycles_per_epoch = create_args.cycles_per_epoch;
 
   // allocate eid
   ret = ENCLAVE_NO_FREE_RESOURCE;
@@ -435,6 +452,19 @@ enclave_ret_code create_enclave(struct keystone_sbi_create create_args)
   enclaves[eid].n_thread = 0;
   enclaves[eid].params = params;
   enclaves[eid].pa_params = pa_params;
+
+  /* check if a policy is set
+   * if so, verify that the policy can be fulfilled
+   * TODO: verify all policies first-> keep track of all of them somewhere
+   */
+  if(encl_valid_policy(&instr_per_epoch, &cycles_per_epoch)){
+    enclaves[eid].policy.instr_per_epoch = instr_per_epoch;
+    enclaves[eid].policy.cycles_per_epoch = cycles_per_epoch;
+
+    /* initialize counters */
+    enclaves[eid].policy_counter.instr_count = 0;
+    enclaves[eid].policy_counter.cycle_count = 0;
+  }
 
   /* Init enclave state (regs etc) */
   clean_state(&enclaves[eid].threads[0]);
@@ -570,7 +600,7 @@ enclave_ret_code run_enclave(uintptr_t* host_regs, enclave_id eid)
   intptr_t cycle_count3 = read_csr(mcycle);
   printm("Cycle count:%x\n", cycle_count3);
  
-  // see if rdinstret actualy shadows the CSR minstret
+  // see if rdinstret actually shadows the CSR minstret
   printm("\npseudoinstruction instr count:%x\n", rdinstret());
   printm("pseudoinstruction instr count:%x\n", rdinstret());
   printm("pseudoinstruction instr count:%x\n", rdinstret());

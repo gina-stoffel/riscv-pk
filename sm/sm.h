@@ -101,7 +101,22 @@ struct keystone_sbi_create
 
   struct runtime_va_params_t params;
   unsigned int* eid_pptr;
+
+  /* define optional policy */
+  unsigned int instr_per_epoch;
+  unsigned int cycles_per_epoch;
 };
+
+/* Define dynamic structure to keep 
+ * track of the enclaves policies
+ */
+/*struct enclave_policies
+{
+  enclave_id eid;
+  struct enclave_policy;
+  struct enclave_policy_counter;
+  struct enclave_policies * next;
+};*/
 
 int osm_pmp_set(uint8_t perm);
 #endif

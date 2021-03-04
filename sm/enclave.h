@@ -84,6 +84,10 @@ struct enclave
   struct thread_state threads[MAX_ENCL_THREADS];
 
   struct platform_enclave_data ped;
+
+  /* the enclaves policy */
+  struct enclave_policy policy;
+  struct enclave_policy_counter policy_counter;
 };
 
 /* attestation reports */
@@ -114,6 +118,29 @@ struct sealing_key
   uint8_t key[SEALING_KEY_SIZE];
   uint8_t signature[SIGNATURE_SIZE];
 };
+
+/* Enclave policy 
+ * Each enclave can register a policy of
+ * how many instructions/cycles it wants
+ * to run in an epoch
+ */
+struct enclave_policy
+{
+  unsigned int instr_per_epoch;
+  unsigned int cycles_per_epoch;
+};
+
+/* Enclave policy counter
+ * Tracking the instruction and
+ * cycle count that an enclave was able to
+ * run during an epoch
+ */
+struct enclave_policy_counter
+{
+  unsigned int instr_count;
+  unsigned int cycle_count;
+};
+
 
 /*** SBI functions & external functions ***/
 // callables from the host
