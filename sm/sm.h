@@ -103,8 +103,8 @@ struct keystone_sbi_create
   unsigned int* eid_pptr;
 
   /* define optional policy */
-  unsigned int instr_per_epoch;
-  unsigned int cycles_per_epoch;
+  uint64_t instr_per_epoch;
+  uint64_t cycles_per_epoch;
 };
 
 /* Define dynamic structure to keep 

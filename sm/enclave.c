@@ -30,6 +30,17 @@ extern byte dev_public_key[PUBLIC_KEY_SIZE];
  *
  ****************************/
 
+/* Internal function used to validate and detect policy violations
+ * of an enclave.
+ */
+static inline bool enclave_detect_policy_violation(enclave_id eid){
+  return false;
+}
+
+static inline bool enclave_validate_policy(uint64_t* instr_per_epoch, uint64_t* cycles_per_epoch){
+  return true;
+}
+
 /* Internal function containing the core of the context switching
  * code to the enclave.
  *
@@ -92,10 +103,10 @@ static inline enclave_ret_code context_switch_to_enclave(uintptr_t* regs,
   /* update policy counter */
   if(enclaves[eid].policy_counter.instr_count == 0){
     // corner case where whe take the fist measurement
-    enclaves[eid].policy_counter.instr_count = (unsigned int)read_csr(minstret);
+    enclaves[eid].policy_counter.instr_count = (uint64_t)read_csr(minstret);
   } 
   else {
-    enclaves[eid].policy_counter.instr_count = (unsigned int)read_csr(minstret) - enclaves[eid].policy_counter.instr_count;
+    enclaves[eid].policy_counter.instr_count = (uint64_t)read_csr(minstret) - enclaves[eid].policy_counter.instr_count;
   }
 
   /* TODO: verify policy holds / detect any policy violations */
@@ -154,7 +165,6 @@ static inline void context_switch_to_host(uintptr_t* encl_regs,
   swap_prev_mpp(&enclaves[eid].threads[0], encl_regs);
   return;
 }
-
 
 // TODO: This function is externally used.
 // refactoring needed
@@ -419,8 +429,8 @@ enclave_ret_code create_enclave(struct keystone_sbi_create create_args)
   pa_params.free_base = create_args.free_paddr;
 
   /* set policy */
-  unsigned int instr_per_epoch = create_args.instr_per_epoch;
-  unsigned int cycles_per_epoch = create_args.cycles_per_epoch;
+  uint64_t instr_per_epoch = create_args.instr_per_epoch;
+  uint64_t cycles_per_epoch = create_args.cycles_per_epoch;
 
   // allocate eid
   ret = ENCLAVE_NO_FREE_RESOURCE;
@@ -461,7 +471,7 @@ enclave_ret_code create_enclave(struct keystone_sbi_create create_args)
    * if so, verify that the policy can be fulfilled
    * TODO: verify all policies first-> keep track of all of them somewhere
    */
-  if(encl_valid_policy(&instr_per_epoch, &cycles_per_epoch)){
+  if(enclave_validate_policy(&instr_per_epoch, &cycles_per_epoch)){
     enclaves[eid].policy.instr_per_epoch = instr_per_epoch;
     enclaves[eid].policy.cycles_per_epoch = cycles_per_epoch;
 

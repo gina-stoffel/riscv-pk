@@ -60,6 +60,28 @@ struct enclave_region
   enum enclave_region_type type;
 };
 
+/* Enclave policy 
+ * Each enclave can register a policy of
+ * how many instructions/cycles it wants
+ * to run in an epoch
+ */
+struct enclave_policy
+{
+  uint64_t instr_per_epoch;
+  uint64_t cycles_per_epoch;
+};
+
+/* Enclave policy counter
+ * Tracking the instruction and
+ * cycle count that an enclave was able to
+ * run during an epoch
+ */
+struct enclave_policy_counter
+{
+  uint64_t instr_count;
+  uint64_t cycle_count;
+};
+
 /* enclave metadata */
 struct enclave
 {
@@ -117,28 +139,6 @@ struct sealing_key
 {
   uint8_t key[SEALING_KEY_SIZE];
   uint8_t signature[SIGNATURE_SIZE];
-};
-
-/* Enclave policy 
- * Each enclave can register a policy of
- * how many instructions/cycles it wants
- * to run in an epoch
- */
-struct enclave_policy
-{
-  unsigned int instr_per_epoch;
-  unsigned int cycles_per_epoch;
-};
-
-/* Enclave policy counter
- * Tracking the instruction and
- * cycle count that an enclave was able to
- * run during an epoch
- */
-struct enclave_policy_counter
-{
-  unsigned int instr_count;
-  unsigned int cycle_count;
 };
 
 
