@@ -109,6 +109,12 @@ static inline enclave_ret_code context_switch_to_enclave(uintptr_t* regs,
     enclaves[eid].policy_counter.instr_count = (uint64_t)read_csr(minstret) - enclaves[eid].policy_counter.instr_count;
   }
 
+/* print output to see the current instruction count
+ * note that the instruction count is either the first time read of the minstret CSR
+ * or it is the difference of instructions retired between the start/resuming of the enclave
+ */
+  printm("EID: %5x, %10s %10x \n", eid, "instr_count:", enclaves[eid].policy_counter.instr_count);
+
   /* TODO: verify policy holds / detect any policy violations */
   if(enclave_detect_policy_violation(eid)){
     // TODO: response
@@ -594,30 +600,6 @@ enclave_ret_code destroy_enclave(enclave_id eid)
 enclave_ret_code run_enclave(uintptr_t* host_regs, enclave_id eid)
 {
   int runable;
-
-  // print the CSR minstret three times in a row
-  // note that for better accuracy qemu should be
-  // invoked with -icount auto
-  // minstret: retired instructions counter
-  intptr_t instr_count = read_csr(minstret);
-  printm("\nInstruction count:%x\n", instr_count);
-  intptr_t instr_count2 = read_csr(minstret);
-  printm("Instructions count:%x\n", instr_count2);
-  intptr_t instr_count3 = read_csr(minstret);
-  printm("Instructions count:%x\n", instr_count3);
-
-  // mcycle: cycle counter
-  intptr_t cycle_count = read_csr(mcycle);
-  printm("\nCycle count:%x\n", cycle_count);
-  intptr_t cycle_count2 = read_csr(mcycle);
-  printm("Cycle count:%x\n", cycle_count2);
-  intptr_t cycle_count3 = read_csr(mcycle);
-  printm("Cycle count:%x\n", cycle_count3);
- 
-  // see if rdinstret actually shadows the CSR minstret
-  printm("\npseudoinstruction instr count:%x\n", rdinstret());
-  printm("pseudoinstruction instr count:%x\n", rdinstret());
-  printm("pseudoinstruction instr count:%x\n", rdinstret());
 
   spinlock_lock(&encl_lock);
   runable = (ENCLAVE_EXISTS(eid)
