@@ -99,6 +99,10 @@ static inline enclave_ret_code context_switch_to_enclave(uintptr_t* regs,
   }
 
   /* TODO: verify policy holds / detect any policy violations */
+  if(enclave_detect_policy_violation(eid)){
+    // TODO: response
+    printm("Policy violation detected for enclave with id: %d", eid);
+  }
 
   /* Todo: printm output of policy structs to verify */
 
