@@ -17,6 +17,9 @@
 struct enclave enclaves[ENCL_MAX];
 #define ENCLAVE_EXISTS(eid) (eid >= 0 && eid < ENCL_MAX && enclaves[eid].state >= 0)
 
+/* enclave_policy holds information about the instructions/cycles run by each enclave */
+struct enclave_policy_counter enclave_policies[ENCL_MAX];
+
 static spinlock_t encl_lock = SPINLOCK_INIT;
 
 extern void save_host_regs(void);
@@ -100,28 +103,22 @@ static inline enclave_ret_code context_switch_to_enclave(uintptr_t* regs,
   cpu_enter_enclave_context(eid);
   swap_prev_mpp(&enclaves[eid].threads[0], regs);
 
-  /* update policy counter */
-  if(enclaves[eid].policy_counter.instr_count == 0){
-    // corner case where whe take the fist measurement
-    enclaves[eid].policy_counter.instr_count = (uint64_t)read_csr(minstret);
-  } 
-  else {
-    enclaves[eid].policy_counter.instr_count = (uint64_t)read_csr(minstret) - enclaves[eid].policy_counter.instr_count;
-  }
+  /* update policy counter by reading from CSR mcycle/minstret */
+  enclave_policies[eid].instr_count = (uint64_t)read_csr(minstret);
+  enclave_policies[eid].cycle_count = (uint64_t)read_csr(mcycle);
 
 /* print output to see the current instruction count
  * note that the instruction count is either the first time read of the minstret CSR
  * or it is the difference of instructions retired between the start/resuming of the enclave
  */
-  printm("EID: %5x, %10s %10x \n", eid, "instr_count:", enclaves[eid].policy_counter.instr_count);
+  //printm("EID: %5d, %10s %10x, %10s %10x\n", eid, "instr_count:", enclave_policies[eid].instr_count, "cycle_count:", enclave_policies[eid].cycle_count);
 
-  /* TODO: verify policy holds / detect any policy violations */
+  /* TODO: verify policy holds / detect any policy violations 
+   * TODO: move to another place since SM needs to do this independent of context switches
   if(enclave_detect_policy_violation(eid)){
     // TODO: response
     printm("Policy violation detected for enclave with id: %d", eid);
-  }
-
-  /* Todo: printm output of policy structs to verify */
+  } */
 
   return ENCLAVE_SUCCESS;
 }
@@ -129,6 +126,12 @@ static inline enclave_ret_code context_switch_to_enclave(uintptr_t* regs,
 static inline void context_switch_to_host(uintptr_t* encl_regs,
     enclave_id eid,
     int return_on_resume){
+
+  /* calculate policy counter */
+  enclave_policies[eid].instr_run_tot = enclave_policies[eid].instr_run_tot + ((uint64_t)read_csr(minstret) - enclave_policies[eid].instr_count);
+  enclave_policies[eid].cycles_run_tot = enclave_policies[eid].cycles_run_tot + ((uint64_t)read_csr(mcycle) - enclave_policies[eid].cycle_count);
+  printm("EID: %5d, %10s %10x, %10s %10x\n", eid, "instr_run_total:", enclave_policies[eid].instr_run_tot, "cycles_run_total:", enclave_policies[eid].cycles_run_tot);
+
 
   // set PMP
   int memid;
@@ -475,15 +478,11 @@ enclave_ret_code create_enclave(struct keystone_sbi_create create_args)
 
   /* check if a policy is set
    * if so, verify that the policy can be fulfilled
-   * TODO: verify all policies first-> keep track of all of them somewhere
+   * TODO: verify all policies first
    */
   if(enclave_validate_policy(&instr_per_epoch, &cycles_per_epoch)){
-    enclaves[eid].policy.instr_per_epoch = instr_per_epoch;
-    enclaves[eid].policy.cycles_per_epoch = cycles_per_epoch;
-
-    /* initialize counters */
-    enclaves[eid].policy_counter.instr_count = 0;
-    enclaves[eid].policy_counter.cycle_count = 0;
+    enclaves[eid].policy.want_instr_per_epoch = instr_per_epoch;
+    enclaves[eid].policy.want_cycles_per_epoch = cycles_per_epoch;
   }
 
   /* Init enclave state (regs etc) */

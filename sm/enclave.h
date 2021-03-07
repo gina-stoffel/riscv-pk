@@ -67,8 +67,8 @@ struct enclave_region
  */
 struct enclave_policy
 {
-  uint64_t instr_per_epoch;
-  uint64_t cycles_per_epoch;
+  uint64_t want_instr_per_epoch;
+  uint64_t want_cycles_per_epoch;
 };
 
 /* Enclave policy counter
@@ -78,8 +78,10 @@ struct enclave_policy
  */
 struct enclave_policy_counter
 {
-  uint64_t instr_count;
+  uint64_t instr_count; // stores the most recent CSR value of when the enclave was run/resumed
   uint64_t cycle_count;
+  uint64_t instr_run_tot; // the sum of instructions that were run
+  uint64_t cycles_run_tot;
 };
 
 /* enclave metadata */
@@ -109,7 +111,6 @@ struct enclave
 
   /* the enclaves policy */
   struct enclave_policy policy;
-  struct enclave_policy_counter policy_counter;
 };
 
 /* attestation reports */
