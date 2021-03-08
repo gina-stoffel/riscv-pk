@@ -437,9 +437,9 @@ enclave_ret_code create_enclave(struct keystone_sbi_create create_args)
   pa_params.user_base = create_args.user_paddr;
   pa_params.free_base = create_args.free_paddr;
 
-  /* set policy */
-  uint64_t instr_per_epoch = create_args.instr_per_epoch;
-  uint64_t cycles_per_epoch = create_args.cycles_per_epoch;
+  /* set policy params*/
+  uint64_t want_instr_per_epoch = create_args.instr_per_epoch;
+  uint64_t want_cycles_per_epoch = create_args.cycles_per_epoch;
 
   // allocate eid
   ret = ENCLAVE_NO_FREE_RESOURCE;
@@ -480,9 +480,15 @@ enclave_ret_code create_enclave(struct keystone_sbi_create create_args)
    * if so, verify that the policy can be fulfilled
    * TODO: verify all policies first
    */
-  if(enclave_validate_policy(&instr_per_epoch, &cycles_per_epoch)){
-    enclaves[eid].policy.want_instr_per_epoch = instr_per_epoch;
-    enclaves[eid].policy.want_cycles_per_epoch = cycles_per_epoch;
+  if(enclave_validate_policy(&want_instr_per_epoch, &want_cycles_per_epoch)){
+    enclaves[eid].policy.want_instr_per_epoch = want_instr_per_epoch;
+    enclaves[eid].policy.want_cycles_per_epoch = want_cycles_per_epoch;
+
+    /* set counter */
+    enclave_policies[eid].instr_count = 0;
+    enclave_policies[eid].cycle_count = 0;
+    enclave_policies[eid].instr_run_tot = 0;
+    enclave_policies[eid].cycles_run_tot = 0;
   }
 
   /* Init enclave state (regs etc) */

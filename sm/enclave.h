@@ -73,7 +73,7 @@ struct enclave_policy
 
 /* Enclave policy counter
  * Tracking the instruction and
- * cycle count that an enclave was able to
+ * cycles that an enclave was able to
  * run during an epoch
  */
 struct enclave_policy_counter
