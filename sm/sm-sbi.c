@@ -78,7 +78,13 @@ uintptr_t mcall_sm_exit_enclave(uintptr_t* encl_regs, unsigned long retval)
     return ENCLAVE_SBI_PROHIBITED;
   }
 
-  ret = exit_enclave(encl_regs, (unsigned long) retval, cpu_get_enclave_id());
+  /* calculate policy counter */
+  int eid = cpu_get_enclave_id();
+  enclave_policies[eid].instr_run_tot = enclave_policies[eid].instr_run_tot + ((uint64_t)read_csr(minstret) - enclave_policies[eid].instr_count);
+  enclave_policies[eid].cycles_run_tot = enclave_policies[eid].cycles_run_tot + ((uint64_t)read_csr(mcycle) - enclave_policies[eid].cycle_count);
+  printm("EID: %5d, %10s %ld, %10s %ld\n", eid, "instr_run_total:", enclave_policies[eid].instr_run_tot, "cycles_run_total:", enclave_policies[eid].cycles_run_tot);
+
+  ret = exit_enclave(encl_regs, (unsigned long) retval, eid);
   return ret;
 }
 
@@ -90,7 +96,13 @@ uintptr_t mcall_sm_stop_enclave(uintptr_t* encl_regs, unsigned long request)
     return ENCLAVE_SBI_PROHIBITED;
   }
 
-  ret = stop_enclave(encl_regs, (uint64_t)request, cpu_get_enclave_id());
+  /* calculate policy counter */
+  int eid = cpu_get_enclave_id();
+  enclave_policies[eid].instr_run_tot = enclave_policies[eid].instr_run_tot + ((uint64_t)read_csr(minstret) - enclave_policies[eid].instr_count);
+  enclave_policies[eid].cycles_run_tot = enclave_policies[eid].cycles_run_tot + ((uint64_t)read_csr(mcycle) - enclave_policies[eid].cycle_count);
+  printm("EID: %5d, %10s %ld, %10s %ld\n", eid, "instr_run_total:", enclave_policies[eid].instr_run_tot, "cycles_run_total:", enclave_policies[eid].cycles_run_tot);
+
+  ret = stop_enclave(encl_regs, (uint64_t)request, eid);
   return ret;
 }
 

@@ -17,9 +17,6 @@
 struct enclave enclaves[ENCL_MAX];
 #define ENCLAVE_EXISTS(eid) (eid >= 0 && eid < ENCL_MAX && enclaves[eid].state >= 0)
 
-/* enclave_policy holds information about the instructions/cycles run by each enclave */
-struct enclave_policy_counter enclave_policies[ENCL_MAX];
-
 static spinlock_t encl_lock = SPINLOCK_INIT;
 
 extern void save_host_regs(void);
@@ -126,11 +123,6 @@ static inline enclave_ret_code context_switch_to_enclave(uintptr_t* regs,
 static inline void context_switch_to_host(uintptr_t* encl_regs,
     enclave_id eid,
     int return_on_resume){
-
-  /* calculate policy counter */
-  enclave_policies[eid].instr_run_tot = enclave_policies[eid].instr_run_tot + ((uint64_t)read_csr(minstret) - enclave_policies[eid].instr_count);
-  enclave_policies[eid].cycles_run_tot = enclave_policies[eid].cycles_run_tot + ((uint64_t)read_csr(mcycle) - enclave_policies[eid].cycle_count);
-  printm("EID: %5d, %10s %15x, %10s %15x\n", (int)eid, "instr_run_total:", enclave_policies[eid].instr_run_tot, "cycles_run_total:", enclave_policies[eid].cycles_run_tot);
 
   // set PMP
   int memid;

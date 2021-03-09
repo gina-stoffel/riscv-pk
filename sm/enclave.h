@@ -19,6 +19,7 @@
 // Special target platform header, set by configure script
 #include TARGET_PLATFORM_HEADER
 
+#define ENCL_MAX 16
 #define ATTEST_DATA_MAXLEN  1024
 #define ENCLAVE_REGIONS_MAX 8
 /* TODO: does not support multithreaded enclave yet */
@@ -74,7 +75,7 @@ struct enclave_policy
 /* Enclave policy counter
  * Tracking the instruction and
  * cycles that an enclave was able to
- * run during an epoch
+ * run during an epochenclave_policies
  */
 struct enclave_policy_counter
 {
@@ -142,6 +143,8 @@ struct sealing_key
   uint8_t signature[SIGNATURE_SIZE];
 };
 
+/* enclave_policy holds information about the instructions/cycles run by each enclave */
+struct enclave_policy_counter enclave_policies[ENCL_MAX];
 
 /*** SBI functions & external functions ***/
 // callables from the host
