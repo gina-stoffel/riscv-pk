@@ -130,8 +130,7 @@ static inline void context_switch_to_host(uintptr_t* encl_regs,
   /* calculate policy counter */
   enclave_policies[eid].instr_run_tot = enclave_policies[eid].instr_run_tot + ((uint64_t)read_csr(minstret) - enclave_policies[eid].instr_count);
   enclave_policies[eid].cycles_run_tot = enclave_policies[eid].cycles_run_tot + ((uint64_t)read_csr(mcycle) - enclave_policies[eid].cycle_count);
-  printm("EID: %5d, %10s %10x, %10s %10x\n", eid, "instr_run_total:", enclave_policies[eid].instr_run_tot, "cycles_run_total:", enclave_policies[eid].cycles_run_tot);
-
+  printm("EID: %5d, %10s %15x, %10s %15x\n", (int)eid, "instr_run_total:", enclave_policies[eid].instr_run_tot, "cycles_run_total:", enclave_policies[eid].cycles_run_tot);
 
   // set PMP
   int memid;
